@@ -7,14 +7,20 @@ export const addPostsController = async (req, res) => {
     return res.status(400).json({ message: "Title and content are required" });
   }
 
-  const newPost = new Post({ title, content });
-  await newPost.save();
+  const posts = []
+
+  for(let i = 0; i <= 10000000; i++){
+    posts.push({title: `Post-test-${i + 2000007}`, content: `Content ${i + 2000007}`})
+  }
+
+  await Post.insertMany(posts)
+
   res.status(200).json({ message: "Post added successfully" });
 };
 
 export const getInfiniteScrollController = async (req, res) => {
   const limit = parseInt(req.query.limit) || 10;
-  const lastItemId = req.query.lastItemId;
+  const lastItemId = req.query.lastItemId || null;
 
   try {
     let query = {};
@@ -24,7 +30,7 @@ export const getInfiniteScrollController = async (req, res) => {
     }
 
     const posts = await Post.find(query)
-      .sort({ title: 1})
+      .sort({ createdAt: -1 })
       .limit(limit)
       .lean();
 

@@ -1,7 +1,7 @@
 import express from "express" 
 import cors from "cors"
 import dbConnection from "./config/dbConnection.js"
-import { addPostsController, getInfiniteScrollController, getPaginationController } from "./controllers/PostsController.js"
+import { addPostsController, getInfiniteScrollController, getPaginationController } from "./controllers/CachedPostsController.js"
 
 const app  = express()
 const PORT = process.env.PORT || 5000
