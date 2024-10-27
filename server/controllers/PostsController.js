@@ -4,19 +4,21 @@ export const addPostsController = async (req, res) => {
   const { title, content } = req.body;
 
   if (!title || !content) {
-    return res.status(400).json({ message: "Title and content are required" });
+    return res.status(400).json({ error: 'Title and content are required' });
   }
 
-  const posts = []
+  try {
+    const newPost = new Post({ title, content });
+    await newPost.save();
 
-  for(let i = 0; i <= 10000000; i++){
-    posts.push({title: `Post-test-${i + 2000007}`, content: `Content ${i + 2000007}`})
+   cache.flushAll(); 
+    
+    res.status(201).json({ message: 'Post added successfully', post: newPost });
+  } catch (error) {
+    res.status(500).json({ error: 'Something went wrong while adding the post' });
   }
-
-  await Post.insertMany(posts)
-
-  res.status(200).json({ message: "Post added successfully" });
 };
+
 
 export const getInfiniteScrollController = async (req, res) => {
   const limit = parseInt(req.query.limit) || 10;
@@ -34,6 +36,7 @@ export const getInfiniteScrollController = async (req, res) => {
       .limit(limit)
       .lean();
 
+      console.log(posts)
     res.status(200).json({
       message: "Posts fetched successfully",
       data: {

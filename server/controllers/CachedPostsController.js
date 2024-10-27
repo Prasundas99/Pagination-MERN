@@ -7,18 +7,23 @@ export const addPostsController = async (req, res) => {
   const { title, content } = req.body;
 
   if (!title || !content) {
-    return res.status(400).json({ error: 'Title and content are required' });
+    return res.status(400).json({ error: "Title and content are required" });
   }
 
   try {
     const newPost = new Post({ title, content });
     await newPost.save();
 
-   cache.flushAll(); 
-    
-    res.status(201).json({ message: 'Post added successfully', post: newPost });
+    cache.flushAll();
+
+    // For infinity Scroll
+    await refreshInitialCache();
+
+    res.status(201).json({ message: "Post added successfully", post: newPost });
   } catch (error) {
-    res.status(500).json({ error: 'Something went wrong while adding the post' });
+    res
+      .status(500)
+      .json({ error: "Something went wrong while adding the post" });
   }
 };
 
@@ -28,36 +33,46 @@ export const getInfiniteScrollController = async (req, res) => {
 
   const cacheKey = `infinite_${lastItemId}_${limit}`;
 
-    // Check cache
-    const cachedData = cache.get(cacheKey);
-    if (cachedData) {
-      return res.json({ posts: cachedData.posts, lastItemId: cachedData.lastItemId, fromCache: true });
-    }
+  // Check cache
+  const cachedData = cache.get(cacheKey);
+  if (cachedData) {
+    return res.json({
+      posts: cachedData.posts,
+      lastItemId: cachedData.lastItemId,
+      fromCache: true,
+    });
+  }
 
   try {
     let query = {};
 
-    if (lastItemId) {
+    if (
+      lastItemId ||
+      lastItemId !== null ||
+      lastItemId !== undefined ||
+      lastItemId !== "null"
+    ) {
       query = { _id: { $gt: lastItemId } };
     }
 
-    const posts = await Post.find(query)
-    .select({ _id: 1, title: 1, content: 1, createdAt: 1 })
+    const posts = await Post.find(lastItemId ? query : {})
+      .select({ _id: 1, title: 1, content: 1, createdAt: 1 })
       .sort({ createdAt: -1 })
       .limit(limit)
       .lean();
 
-      const newLastItemId = posts[posts.length - 1]._id
+    const newLastItemId = posts[posts.length - 1]?._id;
 
     // Cache the result
     cache.set(cacheKey, { posts, lastItemId: newLastItemId });
 
+    console.log(posts);
     res.status(200).json({
       message: "Posts fetched successfully",
       data: {
         posts,
         lastItemId: newLastItemId,
-        fromCache: false
+        fromCache: false,
       },
     });
   } catch (error) {
@@ -72,18 +87,18 @@ export const getPaginationController = async (req, res) => {
 
   const cacheKey = `paginate_${page}_${limit}`;
 
-    // Check cache
-    const cachedData = cache.get(cacheKey);
-    if (cachedData) {
-      return res.json({ 
-        posts: cachedData.posts, 
-        currentPage: page, 
-        totalPages: cachedData.totalPages, 
-        hasNextPage: cachedData.hasNextPage, 
-        hasPreviousPage: cachedData.hasPreviousPage, 
-        fromCache: true 
-      });
-    }
+  // Check cache
+  const cachedData = cache.get(cacheKey);
+  if (cachedData) {
+    return res.json({
+      posts: cachedData.posts,
+      currentPage: page,
+      totalPages: cachedData.totalPages,
+      hasNextPage: cachedData.hasNextPage,
+      hasPreviousPage: cachedData.hasPreviousPage,
+      fromCache: true,
+    });
+  }
 
   try {
     const total = await Post.countDocuments();
@@ -94,18 +109,19 @@ export const getPaginationController = async (req, res) => {
       .skip(skip)
       .limit(limit)
       .lean()
-      .hint({ createdAt: -1 });;
+      .hint({ createdAt: -1 });
 
     const totalPages = Math.ceil(total / limit);
 
-        // Cache the result
-        cache.set(cacheKey, {
-          posts,
-          totalPages,
-          hasNextPage: page < totalPages,
-          hasPreviousPage: page > 1,
-        });
+    // Cache the result
+    cache.set(cacheKey, {
+      posts,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1,
+    });
 
+    console.log(posts);
     res.status(200).json({
       message: "Posts fetched successfully",
       data: {
@@ -122,3 +138,61 @@ export const getPaginationController = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+export const refreshInitialCache = async() => {
+  console.log("Refreshing initial cache...");
+  const limit = 10;
+  const lastItemId = null;
+
+  const cacheKey = `infinite_${lastItemId}_${limit}`;
+
+  console.log(cacheKey);
+
+  try {
+    const posts = await Post.find()
+      .select({ _id: 1, title: 1, content: 1, createdAt: 1 })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean();
+
+    const newLastItemId = posts[posts.length - 1]?._id;
+
+    // Cache the result
+    cache.set(cacheKey, { posts, lastItemId: newLastItemId });
+    console.log("cache set for infinite scroll cache");
+  } catch (error) {
+    console.error("Error fetching infinite scroll posts:", error);
+  }
+
+  const page =  1;
+  const skip = (page - 1) * limit;
+
+  const cacheKeyForPagination = `paginate_${page}_${limit}`;
+
+  console.log(cacheKeyForPagination);
+  try {
+    const total = await Post.countDocuments();
+
+    const posts = await Post.find()
+      .select({ _id: 1, title: 1, content: 1, createdAt: 1 })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean()
+      .hint({ createdAt: -1 });
+
+    const totalPages = Math.ceil(total / limit);
+
+    // Cache the result
+    cache.set(cacheKeyForPagination, {
+      posts,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1,
+    });
+
+    console.log("cache set for pagination cache");
+  } catch (error) {
+    console.error("Error fetching pagination posts:", error);
+  }
+}
+
