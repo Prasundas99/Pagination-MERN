@@ -1,12 +1,14 @@
 import express from "express" 
 import cors from "cors"
 import dbConnection from "./config/dbConnection.js"
-import { addPostsController, getInfiniteScrollController, getPaginationController } from "./controllers/CachedPostsController.js"
+import { addPostsController, getInfiniteScrollController, getPaginationController, refreshInitialCache } from "./controllers/CachedPostsController.js"
 
 const app  = express()
 const PORT = process.env.PORT || 5000
 
-dbConnection()
+const conn = await dbConnection()
+
+if(conn) refreshInitialCache()
 
 app.use(express.json())
 app.use(express.urlencoded({extended:true}))
