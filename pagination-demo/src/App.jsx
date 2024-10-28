@@ -1,6 +1,6 @@
 import "./App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import OffsetPagination from "./Pages/offsetPagination";
+import OffsetPagination from "./Pages/OffsetPagination";
 import HomePage from "./Pages/Home";
 import InfiniteScrollPage from "./Pages/InfiniteScroll";
 
