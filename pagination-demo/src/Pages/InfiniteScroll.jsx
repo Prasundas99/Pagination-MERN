@@ -1,59 +1,75 @@
-import  { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import Card from '../components/Card/Card';
 import { API_URL } from '../utils/constants';
 
 const InfiniteScrollPage = () => {
-  const [posts, setPosts] = useState([]);
-  const [lastItemId, setLastItemId] = useState('');
+  const [state, setState] = useState({
+    posts: [],
+    lastItemId: '',
+    hasMore: true,
+    isFromCache: false,
+    responseTime: null,
+  });
   const [loading, setLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
+
+  const fetchPosts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const startTime = Date.now();
+      const response = await axios.get(`${API_URL}/curser-based-pagination?lastItemId=${state.lastItemId}&limit=10`);
+      const endTime = Date.now();
+
+      const newPosts = response.data.data.posts;
+      setState((prevState) => ({
+        ...prevState,
+        posts: [...prevState.posts, ...newPosts],
+        lastItemId: response.data.data.lastItemId,
+        hasMore: newPosts.length > 0,
+        isFromCache: response.data.data.fromCache,
+        responseTime: endTime - startTime,
+      }));
+      setLoading(false);
+    } catch (error) {
+      console.log(error);
+      setLoading(false);
+    }
+  }, [state.lastItemId]);
 
   useEffect(() => {
-    const fetchPosts = async () => {
-      setLoading(true);
-      try {
-        const response = await axios.get(`${API_URL}/curser-based-pagination?lastItemId=${lastItemId}&limit=10`);
-        const newPosts = response.data.data.posts;
-        setPosts((prev) => [...prev, ...newPosts]);
-        setLastItemId(response.data.data.lastItemId);
-        setHasMore(newPosts.length > 0);
-        setLoading(false);
-      } catch (error) {
-        console.log(error)
-        setLoading(false);
-      }
-    };
-
-    if (hasMore) {
+    if (state.hasMore) {
       fetchPosts();
     }
-  }, [hasMore, lastItemId]);
+  }, [state.hasMore, fetchPosts]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const handleScroll = () => {
+  const handleScroll = useCallback(() => {
     if (window.innerHeight + document.documentElement.scrollTop === document.documentElement.offsetHeight) {
-      if (hasMore) setLastItemId((prevId) => prevId);
+      if (state.hasMore) {
+        setState((prevState) => ({ ...prevState, lastItemId: prevState.lastItemId }));
+      }
     }
-  };
+  }, [state.hasMore]);
 
   useEffect(() => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [handleScroll, hasMore]);
+  }, [handleScroll]);
 
   return (
     <div>
       <h1>Infinite Scroll Posts</h1>
+      <p>Is from cache: {String(state.isFromCache)}</p>
+      <p>Response time: {state.responseTime} ms</p>
+
       <ul>
-        {posts?.map((post) => (
+        {state.posts?.map((post) => (
           <li key={post._id}>
-           <Card title={post.title} content={post.content} />
+            <Card title={post.title} content={post.content} />
           </li>
         ))}
       </ul>
       {loading && <p>Loading...</p>}
-      {!hasMore && <p>No more posts</p>}
+      {!state.hasMore && <p>No more posts</p>}
     </div>
   );
 };
