@@ -69,11 +69,9 @@ export const getInfiniteScrollController = async (req, res) => {
     console.log(posts);
     res.status(200).json({
       message: "Posts fetched successfully",
-      data: {
-        posts,
-        lastItemId: newLastItemId,
-        fromCache: false,
-      },
+      posts,
+      lastItemId: newLastItemId,
+      fromCache: false,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -124,21 +122,19 @@ export const getPaginationController = async (req, res) => {
     console.log(posts);
     res.status(200).json({
       message: "Posts fetched successfully",
-      data: {
-        posts,
-        total,
-        totalPages: totalPages,
-        currentPage: page,
-        hasNextPage: page < totalPages,
-        hasPreviousPage: page > 1,
-        fromCache: false,
-      },
+      posts,
+      total,
+      totalPages: totalPages,
+      currentPage: page,
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1,
+      fromCache: false,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
-export const refreshInitialCache = async() => {
+export const refreshInitialCache = async () => {
   console.log("Refreshing initial cache...");
   const limit = 10;
   const lastItemId = null;
@@ -163,7 +159,7 @@ export const refreshInitialCache = async() => {
     console.error("Error fetching infinite scroll posts:", error);
   }
 
-  const page =  1;
+  const page = 1;
   const skip = (page - 1) * limit;
 
   const cacheKeyForPagination = `paginate_${page}_${limit}`;
@@ -194,5 +190,4 @@ export const refreshInitialCache = async() => {
   } catch (error) {
     console.error("Error fetching pagination posts:", error);
   }
-}
-
+};
