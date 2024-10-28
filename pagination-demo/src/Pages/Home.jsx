@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 const HomePage = () => {
   return (
     <div style={{ textAlign: 'center', padding: '20px', margin: 'auto' }}>
-      <h1>Welcome to the Blog Application</h1>
+      <h1>Welcome to the Demo Pagination Application</h1>
       <p>Select an option below to proceed:</p>
       <nav>
         <ul style={{ listStyle: 'none', padding: 0 }}>

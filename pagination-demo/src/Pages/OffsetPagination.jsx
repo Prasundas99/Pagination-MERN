@@ -27,10 +27,10 @@ const OffsetPagination = () => {
         
         setState((prevState) => ({
           ...prevState,
-          posts: response.data.data.posts,
-          totalPages: response.data.data.totalPages,
+          posts: response.data?.posts || [],
+          totalPages: response.data?.totalPages || 1,
           responseTime: endTime - startTime,
-          isFromCache: response.data.data.fromCache,
+          isFromCache: response.data?.fromCache || false,
         }));
       } catch (error) {
         console.log(error);
@@ -50,7 +50,7 @@ const OffsetPagination = () => {
 
   return (
     <div>
-      <h1>Paginated Posts</h1>
+      <h1>Offset Based Paginated Posts</h1>
       <p>Response time: {state.responseTime} ms</p>
       <p>Is from cache: {String(state.isFromCache)}</p>
       {loading ? (

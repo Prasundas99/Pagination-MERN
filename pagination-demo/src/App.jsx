@@ -2,7 +2,7 @@ import "./App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import OffsetPagination from "./Pages/OffsetPagination";
 import HomePage from "./Pages/Home";
-import InfiniteScrollPage from "./Pages/InfiniteScroll";
+import InfiniteScrollPage from "./Pages/CurserPagination";
 import AddPostPage from "./Pages/AddPostPage";
 
 function App() {
